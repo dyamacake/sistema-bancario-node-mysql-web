@@ -1,6 +1,4 @@
-CREATE DATABASE IF NOT EXISTS teste_db_banco_my CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE teste_db_banco_my;
-
+@'
 CREATE TABLE IF NOT EXISTS conta_corrente (
   codigo INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(150) NOT NULL,
@@ -42,3 +40,10 @@ INSERT IGNORE INTO usuarios (usuario, senha_hash, perfil, pergunta_secreta, resp
   ('admin', SHA2('Total12', 256), 'admin', 'Qual o nome do sistema?', SHA2('banco', 256)),
   ('operador', SHA2('Gestor34', 256), 'operador', 'Qual o nome do sistema?', SHA2('banco', 256)),
   ('consulta', SHA2('Extrato56', 256), 'consulta', 'Qual o nome do sistema?', SHA2('banco', 256));
+'@ | Set-Content -Path setup.sql -Encoding UTF8
+
+node --env-file=.env -e "import('fs').then(async fs => { const sql = fs.readFileSync('setup.sql', 'utf8'); const mysql = await import('mysql2/promise'); const conn = await mysql.createConnection({ host: process.env.DB_HOST, port: Number(process.env.DB_PORT), user: process.env.DB_USER, password: process.env.DB_PASS, ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true }, multipleStatements: true }); await conn.query(sql); console.log('Tabelas criadas no TiDB Cloud com sucesso!'); await conn.end(); })"
+
+
+
+
