@@ -1,0 +1,25 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "ssh": "Enabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3306,
+            "sshOptions": {
+                "port": 22,
+                "username": "xcqLGsNX1dPYXTU.root",
+                "password": "6CSKhes5lA06WXoj",
+                "host": "gateway01.us-east-1.prod.aws.tidbcloud.com"
+            },
+            "driver": "TiDB",
+            "name": "sistema-bancario-web",
+            "database": "sistema-bancario-web",
+            "username": "xcqLGsNX1dPYXTU.root",
+            "askForPassword": true
+        }
+    ]
+}
