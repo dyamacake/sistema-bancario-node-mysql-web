@@ -5,7 +5,8 @@
   "scripts": {
     "api": "node --env-file=.env servidor.js",
     "dev": "node --env-file=.env --watch servidor.js",
-    "test": "node --env-file=.env --test"
+    "test": "node --env-file=.env --test",
+    "start": "node servidor.js"
   },
   "dependencies": {
     "express": "^4.22.3",
