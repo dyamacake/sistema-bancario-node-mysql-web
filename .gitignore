@@ -1,0 +1,134 @@
+﻿node_modules/
+.env
+*.log
+*.db
+exportado
+versoes_zip_rar
+
+@'
+# 🏦 Sistema Bancário Full-Stack (Node.js + MySQL)
+
+Aplicação web completa de gestão de contas-correntes com controle de acesso por perfis, auditoria de ações (logs), transações financeiras seguras, geração de extratos em PDF/CSV e testes automatizados.
+
+---
+
+## ✨ Funcionalidades Principais
+
+- **Gestão de Contas:** Cadastro, consulta com filtro por nome, depósitos, saques, transferências entre contas (com transações atômicas) e exclusão.
+- **Resumo Financeiro:** Painel superior com total de clientes ativos e saldo total custodiado em tempo real.
+- **Autenticação e Segurança:**
+  - Login com sessão via token (`Bearer Token`) e expiração automática após **15 minutos** de inatividade.
+  - Bloqueio automático de conta (`ativo = 'Nao'`) após exceder **3 tentativas** de senha incorretas.
+  - Controle de permissões por perfil: **`admin`**, **`operador`** e **`consulta`**.
+- **Gestão de Usuários (Exclusivo Admin):** Cadastro de novos usuários, alteração de senhas, reativação de contas bloqueadas e visualização do último acesso.
+- **Auditoria (Logs):** Registro automático de todas as ações (login, consultas, movimentações, exportações e exclusões) com filtro por usuário e faixa de datas.
+- **Relatórios:** Exportação de extratos em **PDF** (`pdfkit`) e listas de extratos, usuários e logs em **CSV** compatível com Excel (UTF-8 com BOM).
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+- **Back-end:** Node.js (ES Modules, `node:crypto`, `node:test`), Express
+- **Banco de Dados:** MySQL 8+ (`mysql2/promise` com Pool de Conexões)
+- **Front-end:** HTML5, CSS3 e JavaScript puro (Vanilla JS)
+- **Documentos:** `pdfkit` para geração de PDF
+
+---
+
+## 🚀 Como Instalar e Rodar Localmente
+
+### 1. Pré-requisitos
+- [Node.js](https://nodejs.org) (v20 ou superior, com suporte nativo a `--env-file`)
+- [MySQL Server](https://mysql.com) rodando localmente na porta `3306`
+
+### 2. Clonar o repositório e instalar dependências
+```bash
+git clone https://github.com
+cd SEU-REPOSITORIO
+npm install
+```
+
+### 3. Configurar o Banco de Dados MySQL
+Execute o script SQL abaixo no seu servidor MySQL para criar o banco, as tabelas e os usuários iniciais:
+
+```sql
+CREATE DATABASE IF NOT EXISTS teste_db_banco_my
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE teste_db_banco_my;
+
+CREATE TABLE IF NOT EXISTS conta_corrente (
+  codigo INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(150) NOT NULL,
+  data VARCHAR(20) NOT NULL,
+  saldo DECIMAL(15, 2) NOT NULL DEFAULT 0.00
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS extrato (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  conta_codigo INT NOT NULL,
+  tipo VARCHAR(100) NOT NULL,
+  valor DECIMAL(15, 2) NOT NULL,
+  data_hora VARCHAR(30) NOT NULL,
+  CONSTRAINT fk_extrato_conta
+    FOREIGN KEY (conta_codigo) REFERENCES conta_corrente(codigo)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario VARCHAR(50) UNIQUE NOT NULL,
+  senha_hash VARCHAR(64) NOT NULL,
+  perfil ENUM('admin', 'operador', 'consulta') NOT NULL,
+  ultimo_acesso VARCHAR(30) NULL,
+  ativo ENUM('Sim', 'Nao') NOT NULL DEFAULT 'Sim',
+  tentativas_falhas INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  data_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  usuario_id INT NULL,
+  usuario_nome VARCHAR(50) NOT NULL,
+  funcao VARCHAR(80) NOT NULL,
+  descricao VARCHAR(255) NOT NULL
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO usuarios (usuario, senha_hash, perfil) VALUES
+  ('admin', SHA2('Total12', 256), 'admin'),
+  ('operador', SHA2('Gestor34', 256), 'operador'),
+  ('consulta', SHA2('Extrato56', 256), 'consulta');
+```
+
+### 4. Configurar variáveis de ambiente
+Copie o arquivo modelo `.env.example` para `.env` e preencha suas credenciais do MySQL:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+### 5. Executar a aplicação e os testes
+- **Rodar testes automatizados:**
+  ```bash
+  npm test
+  ```
+- **Iniciar servidor em modo desenvolvimento (com reinício automático):**
+  ```bash
+  npm run dev
+  ```
+- Acesse no navegador: **`http://localhost:3000`**
+
+---
+
+## 🔐 Credenciais Padrão de Teste
+
+| Usuário | Senha | Permissões |
+| :--- | :--- | :--- |
+| **`admin`** | `Total12` | Acesso total, exclusão de contas, gestão de usuários e logs de auditoria |
+| **`operador`** | `Gestor34` | Cadastro de contas, depósitos, saques, transferências e extratos |
+| **`consulta`** | `Extrato56` | Apenas visualização de contas, filtros e download de extratos (CSV/PDF) |
+'@ | Set-Content -Path README.md -Encoding UTF8
+
+versoes_zip_rar/
+
+versoes_zip_rar/

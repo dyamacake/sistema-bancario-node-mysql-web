@@ -1,0 +1,341 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Banco Node + MySQL</title>
+  <link rel="icon" href="data:,">
+  <!-- <script src="https://jsdelivr.net"></script>   -->
+  <!-- <script src="/vendor/chart.js/chart.umd.min.js"></script> -->
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 30px auto; padding: 0 15px; background: #f4f6f8; }
+    .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+    .login-box { max-width: 360px; margin: 80px auto; }
+    .topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+    .user-box { text-align: right; }
+    .ultimo-acesso { font-size: 12px; color: #475569; margin-top: 4px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .resumo-card { background: #e0f2fe; border-left: 5px solid #0284c7; padding: 15px; border-radius: 6px; }
+    .resumo-valor { font-size: 22px; font-weight: bold; color: #0369a1; margin-top: 5px; }
+    input, select, button { padding: 8px 10px; margin: 4px 2px; border-radius: 4px; border: 1px solid #ccc; }
+    button { background: #0066cc; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0052a3; }
+    .btn-saque { background: #d97706; }
+    .btn-excluir { background: #dc2626; }
+    .btn-limpar { background: #6b7280; }
+    .btn-aba { background: #334155; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+    .erro { color: #dc2626; font-weight: bold; background: #fee2e2; padding: 10px; border-radius: 4px; }
+    .sucesso { color: #15803d; font-weight: bold; background: #dcfce7; padding: 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+
+
+  <!-- TELA DE LOGIN -->
+  <div id="tela-login" class="card login-box">
+    <h2>Acesso ao Sistema</h2>
+    <p id="msg-login"></p>
+    <input id="login-usuario" placeholder="Usuário" style="width: 92%;"><br>
+    <input id="login-senha" type="password" placeholder="Senha" onkeyup="if(event.key==='Enter') fazerLogin()" style="width: 92%;"><br>
+    <button onclick="fazerLogin()" style="width: 98%; margin-top: 10px;">Entrar</button>
+    <div style="text-align:center; margin-top: 12px;">
+      <a href="#" onclick="abrirRecuperacaoSenha()" style="font-size: 13px; color: #0066cc;">Esqueci minha senha</a>
+    </div>
+  </div>
+
+  <!-- TELA DE RECUPERAÇÃO DE SENHA -->
+  <div id="tela-recuperar" class="card login-box" style="display:none;">
+    <h2>Recuperar Senha</h2>
+    <p id="msg-recuperar"></p>
+
+    <div id="etapa-1-usuario">
+      <input id="rec-usuario" placeholder="Digite seu usuário" style="width: 92%;"><br>
+      <button onclick="consultarPerguntaSecreta()" style="width: 98%; margin-top: 10px;">Buscar Pergunta Secreta</button>
+    </div>
+
+    <div id="etapa-2-resposta" style="display:none;">
+      <p id="texto-pergunta-secreta" style="font-weight: bold; color: #334155;"></p>
+      <input id="rec-resposta" placeholder="Sua resposta secreta" style="width: 92%;"><br>
+      <input id="rec-nova-senha" type="password" placeholder="Nova senha (mín. 4 caracteres)" style="width: 92%;"><br>
+      <button onclick="confirmarRedefinicaoSenha()" style="width: 98%; margin-top: 10px;">Redefinir Senha</button>
+    </div>
+
+    <div style="text-align:center; margin-top: 12px;">
+      <a href="#" onclick="voltarParaLogin()" style="font-size: 13px; color: #475569;">← Voltar para o Login</a>
+    </div>
+  </div>
+
+
+
+
+
+  <!-- TELA PRINCIPAL -->
+  <div id="tela-sistema" style="display:none;">
+    <div class="topbar">
+      <div>
+        <h2 style="margin: 0;">Sistema Bancário (MySQL)</h2>
+      </div>
+      <div class="user-box">
+        <div>
+          <button class="btn-aba" onclick="alternarAba('contas')">Contas</button>
+          <button id="btn-aba-usuarios" class="btn-aba" style="display:none;" onclick="alternarAba('usuarios')">Gestão de Usuários</button>
+          <button id="btn-aba-logs" class="btn-aba" style="display:none;" onclick="alternarAba('logs')">Logs de Auditoria</button>
+          <span id="info-usuario" style="margin: 0 8px; font-weight: bold;"></span>
+          <button class="btn-excluir" onclick="fazerLogout()">Sair</button>
+        </div>
+        <div id="info-ultimo-acesso" class="ultimo-acesso"></div>
+      </div>
+    </div>
+
+    <p id="msg" style="display:none;"></p>
+
+    <!-- ABA 1: CONTAS E RESUMO -->
+    <div id="aba-contas">
+      <div class="grid" style="margin-bottom: 20px;">
+        <!-- <div class="resumo-card">
+          <div>Clientes Ativos</div>
+          <div id="resumo-qtd" class="resumo-valor">0</div>
+        </div>
+        <div class="resumo-card">
+          <div>Saldo Total Custodiado</div>
+          <div id="resumo-total" class="resumo-valor">R$ 0,00</div>
+        </div> -->
+
+        <!-- INTERRUPTORES DE VISUALIZAÇÃO (Iniciam desmarcados) -->
+        <div style="margin-bottom: 12px; display: flex; gap: 20px; flex-wrap: wrap;">
+          <label style="cursor: pointer; font-weight: bold; color: #334155;">
+            <input id="check-exibir-resumo" type="checkbox" onchange="alternarResumo()">
+            Mostrar Resumo Financeiro
+          </label>
+          <label style="cursor: pointer; font-weight: bold; color: #334155;">
+            <input id="check-exibir-graficos" type="checkbox" onchange="alternarGraficos()">
+            Mostrar Gráficos de Saldos e Distribuição
+          </label>
+        </div>
+
+        <!-- CONTAINER DO RESUMO FINANCEIRO (Inicia oculto) -->
+        <div id="box-resumo" class="grid" style="display:none; margin-bottom: 20px;">
+          <div class="resumo-card">
+            <div>Clientes Ativos</div>
+            <div id="resumo-qtd" class="resumo-valor">0</div>
+          </div>
+          <div class="resumo-card">
+            <div>Saldo Total Custodiado</div>
+            <div id="resumo-total" class="resumo-valor">R$ 0,00</div>
+          </div>
+        </div>
+
+
+      </div>
+
+
+      <!-- 2. BLOCO DE OPERAÇÕES (agora ocupa 100% da largura da tela) -->
+      <div id="box-operacoes-conta" class="grid">
+        <div class="card">
+          <h3>Nova Conta</h3>
+          <input id="nome" placeholder="Nome do cliente" style="width: 90%;"><br>
+          <input id="saldo" type="number" step="0.01" placeholder="Saldo inicial (R$)" style="width: 90%;"><br>
+          <button onclick="criarConta()">Cadastrar Conta</button>
+        </div>
+
+        <div class="card">
+          <h3>Transferência entre Contas</h3>
+          <input id="origem" type="number" placeholder="Cód. Origem" style="width: 42%;">
+          <input id="destino" type="number" placeholder="Cód. Destino" style="width: 42%;"><br>
+          <input id="valor-transf" type="number" step="0.01" placeholder="Valor (R$)" style="width: 90%;"><br>
+          <button onclick="realizarTransferencia()">Transferir</button>
+        </div>
+      </div>
+
+
+
+
+
+      <!-- INTERRUPTOR PARA EXIBIR/OCULTAR GRÁFICOS -->
+      <!-- <div style="margin-bottom: 12px;">
+        <label style="cursor: pointer; font-weight: bold; color: #334155;">
+          <input id="check-exibir-graficos" type="checkbox" onchange="alternarGraficos()">
+          Mostrar Gráficos de Saldos e Distribuição
+        </label>
+      </div> -->
+
+      <!-- CONTAINER DOS GRÁFICOS (Inicia oculto) -->
+      <div id="box-graficos" class="grid" style="display:none; margin-bottom: 20px;">
+        <div class="card" style="margin-bottom: 0;">
+          <h4 style="margin-top: 0;">Ranking de Saldos por Cliente (R$)</h4>
+          <div id="grafico-saldos-html"></div>
+        </div>
+        <div class="card" style="margin-bottom: 0;">
+          <h4 style="margin-top: 0;">Distribuição do Saldo Total (%)</h4>
+          <div id="grafico-percentual-html"></div>
+        </div>
+      </div>
+
+
+
+
+      <!-- <div class="grid" style="margin-bottom: 20px;">
+        <div class="card" style="margin-bottom: 0;">
+          <h4 style="margin-top: 0;">Ranking de Saldos por Cliente (R$)</h4>
+          <div id="grafico-saldos-html"></div>
+        </div>
+        <div class="card" style="margin-bottom: 0;">
+          <h4 style="margin-top: 0;">Distribuição do Saldo Total (%)</h4>
+          <div id="grafico-percentual-html"></div>
+        </div>
+      </div> -->
+
+
+
+      <!-- <div class="grid">
+        <div class="card">
+          <h3>Nova Conta</h3>
+          <input id="nome" placeholder="Nome do cliente" style="width: 90%;"><br>
+          <input id="saldo" type="number" step="0.01" placeholder="Saldo inicial (R$)" style="width: 90%;"><br>
+          <button onclick="criarConta()">Cadastrar Conta</button>
+        </div>
+
+        <div class="card">
+          <h3>Transferência entre Contas</h3>
+          <input id="origem" type="number" placeholder="Cód. Origem" style="width: 42%;">
+          <input id="destino" type="number" placeholder="Cód. Destino" style="width: 42%;"><br>
+          <input id="valor-transf" type="number" step="0.01" placeholder="Valor (R$)" style="width: 90%;"><br>
+          <button onclick="realizarTransferencia()">Transferir</button>
+        </div>
+      </div> -->
+
+      <div class="card">
+        <h3>Contas Cadastradas</h3>
+        <div style="margin-bottom: 10px;">
+          <input id="campo-busca" placeholder="Buscar cliente por nome..." onkeyup="if(event.key==='Enter') carregarContas(true)" style="width: 50%;">
+          <button onclick="carregarContas(true)">Filtrar</button>
+          <button class="btn-limpar" onclick="limparFiltro()">Limpar</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Cód</th>
+              <th>Nome</th>
+              <th>Saldo</th>
+              <th>Movimentar (Valor Livre)</th>
+              <th>Opções</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-contas"></tbody>
+        </table>
+      </div>
+
+      <div class="card" id="box-extrato" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 id="titulo-extrato">Extrato</h3>
+          <div>
+            <button style="background:#16a34a;" onclick="baixarArquivoExtrato('csv')">Baixar CSV</button>
+            <button style="background:#dc2626;" onclick="baixarArquivoExtrato('pdf')">Baixar PDF</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Data/Hora</th><th>Tipo</th><th>Valor</th></tr></thead>
+          <tbody id="tabela-extrato"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ABA 2: GESTÃO DE USUÁRIOS (EXCLUSIVA ADMIN) -->
+    <div id="aba-usuarios" style="display:none;">
+      <div class="topbar">
+        <h3 style="margin:0;">Gestão de Usuários</h3>
+        <button class="btn-limpar" onclick="alternarAba('contas')">← Voltar</button>
+      </div>
+
+      <div class="card">
+        <h4>Cadastrar Usuário, Alterar Senha ou Reativar</h4>
+        <input id="novo-user" placeholder="Nome de usuário" style="width: 22%;">
+        <input id="nova-senha" type="password" placeholder="Nova senha" style="width: 22%;">
+        <select id="novo-perfil" style="width: 18%;">
+          <option value="consulta">consulta</option>
+          <option value="operador">operador</option>
+          <option value="admin">admin</option>
+        </select><br>
+        <input id="nova-pergunta" placeholder="Pergunta secreta (ex: Nome do pet?)" style="width: 45%;">
+        <input id="nova-resposta" placeholder="Resposta secreta (padrão: banco)" style="width: 30%;">
+        <button onclick="cadastrarOuAtualizarUsuario()">Salvar</button>
+      </div>
+
+
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h4 style="margin:0;">Usuários Cadastrados</h4>
+          <button style="background:#16a34a;" onclick="exportarUsuariosCSV()">Exportar CSV</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Usuário</th>
+              <th>Perfil</th>
+              <th>Último Acesso</th>
+              <th>Ativo</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-usuarios"></tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <!-- ABA 3: LOGS DE AUDITORIA (EXCLUSIVA ADMIN) -->
+    <div id="aba-logs" style="display:none;">
+      <div class="topbar">
+        <h3 style="margin:0;">Logs de Auditoria do Sistema</h3>
+        <button class="btn-limpar" onclick="alternarAba('contas')">← Voltar</button>
+      </div>
+
+      <div class="card">
+        <h4>Filtrar Registros</h4>
+        <label>De: <input id="log-data-inicio" type="date"></label>
+        <label>Até: <input id="log-data-fim" type="date"></label>
+        <input id="log-usuario" placeholder="Nome do usuário..." style="width: 22%;">
+        <select id="log-limite" onchange="carregarLogs(false, 1)" title="Itens por página">
+          <option value="10">10 / pág</option>
+          <option value="15" selected>15 / pág</option>
+          <option value="30">30 / pág</option>
+          <option value="50">50 / pág</option>
+        </select>
+        <button onclick="carregarLogs(true, 1)">Filtrar Logs</button>
+        <button class="btn-limpar" onclick="limparFiltroLogs()">Limpar</button>
+        <button style="background:#16a34a;" onclick="exportarLogsCSV()">Exportar CSV</button>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Data / Hora</th>
+              <th>ID User</th>
+              <th>Usuário</th>
+              <th>Função</th>
+              <th>O que foi realizado</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-logs"></tbody>
+        </table>
+
+        <!-- BARRA DE PAGINAÇÃO -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding-top:10px; border-top:1px solid #eee;">
+          <span id="info-paginacao-logs" style="font-size:13px; color:#475569;">Página 1 de 1 (0 registros)</span>
+          <div>
+            <button id="btn-log-anterior" class="btn-limpar" onclick="mudarPaginaLogs(-1)">← Anterior</button>
+            <button id="btn-log-proxima" class="btn-limpar" onclick="mudarPaginaLogs(1)">Próxima →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  <script src="app.js"></script>
+</body>
+</html>
