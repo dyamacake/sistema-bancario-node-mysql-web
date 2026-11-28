@@ -297,16 +297,6 @@ app.get('/logs/csv', exigirPermissao(['admin']), async (req, res) => {
   }
 });
 
-app.get('/debug-env', (req, res) => {
-  res.json({
-    host: process.env.DB_HOST || 'VAZIO',
-    port: process.env.DB_PORT || 'VAZIO',
-    user: process.env.DB_USER || 'VAZIO',
-    passLength: process.env.DB_PASS ? process.env.DB_PASS.length : 0,
-    db: process.env.DB_NAME || 'VAZIO',
-    ssl: process.env.DB_SSL || 'VAZIO'
-  });
-});
 
 
 
